@@ -1,5 +1,5 @@
-# SajiloHR — PKI-secured HRMS (Tkinter + MongoDB)
-
+# SajiloHRMS — PKI-secured HRMS (Tkinter + MongoDB)
+# --Developer: ISHANT
 This is a **local-hosted** HRMS-style application built to demonstrate **PKI-based cryptography**:
 - Certificate-based authentication (challenge-response)
 - Password + OTP (2FA) login
