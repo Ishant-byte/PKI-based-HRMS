@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 
@@ -26,16 +27,32 @@ def _now():
 
 def seed_admin():
     db = get_db()
-    if db.users.find_one({"username": "admin@sajilohr.local"}):
+    # Admin seeding is a development convenience and MUST NOT rely on hardcoded
+    # credentials. For safety, seed only when explicitly enabled via environment.
+    #
+    # Usage (example):
+    #   SEED_ADMIN_ENABLED=true
+    #   SEED_ADMIN_USER=admin@sajilohr.local
+    #   SEED_ADMIN_PASS=<strong-password>
+    enabled = os.getenv("SEED_ADMIN_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
+    seed_user = os.getenv("SEED_ADMIN_USER", "").strip()
+    seed_pass = os.getenv("SEED_ADMIN_PASS", "").strip()
+
+    if not enabled:
         return
-    pw = "Admin@123"
-    cert_info = issue_user_certificate("admin@sajilohr.local", pw, actor_admin=None)
+    if not seed_user or not seed_pass:
+        print("[SajiloHR] Admin seeding enabled, but SEED_ADMIN_USER/SEED_ADMIN_PASS are missing. Skipping.")
+        return
+    if db.users.find_one({"username": seed_user}):
+        return
+
+    cert_info = issue_user_certificate(seed_user, seed_pass, actor_admin=None)
     db.users.insert_one({
-        "username": "admin@sajilohr.local",
+        "username": seed_user,
         "role": "admin",
         "job_role": "System Administrator",
         "department": "Security",
-        "password_hash": hash_password(pw),
+        "password_hash": hash_password(seed_pass),
         "created_at": _now(),
         "cert_pem": cert_info["cert_pem"],
         "cert_serial": str(cert_info["serial"]),
@@ -49,7 +66,7 @@ def seed_admin():
     })
     from server.services.crypto_encrypt import encrypt_fields
     db.profiles.insert_one(encrypt_fields({
-        "username": "admin@sajilohr.local",
+        "username": seed_user,
         "first_name": "System",
         "last_name": "Admin",
         "department": "Security",
@@ -57,11 +74,11 @@ def seed_admin():
         "address": "",
         "updated_at": _now(),
     }, fields=["phone","address"]))
-    log_event("ADMIN_SEEDED", "admin@sajilohr.local", "admin@sajilohr.local", "Default admin seeded", {"username":"admin@sajilohr.local"})
-    print("[SajiloHR] Seeded default admin:")
-    print("  username: admin@sajilohr.local")
-    print("  password: Admin@123")
+    log_event("ADMIN_SEEDED", seed_user, seed_user, "Admin seeded", {"username": seed_user})
+    print("[SajiloHR] Seeded admin user:")
+    print("  username:", seed_user)
     print("  keystore:", cert_info["pkcs12_path"])
+    print("  note: password is taken from SEED_ADMIN_PASS (not printed)")
 
 app = FastAPI(title="SajiloHR Server", version="1.0")
 
