@@ -41,12 +41,17 @@ Server will:
 - Connect to MongoDB
 - Create indexes
 - Create a local Root CA if missing in `pki/ca/`
-- Seed a default admin account if missing:
-  - username: `admin@sajilohr.local`
-  - password: `Admin@123`
-  - role: Admin
-  - (A certificate + PKCS#12 keystore will be generated on first run)
+  - Optionally seed an admin account (development convenience) **only if** you explicitly enable it via environment variables.
 
+### Optional: seed an admin user (recommended for first run)
+Admin seeding is disabled by default to avoid hardcoded credentials.
+
+Set the following environment variables before starting the server:
+- `SEED_ADMIN_ENABLED=true`
+- `SEED_ADMIN_USER=admin@sajilohr.local`
+- `SEED_ADMIN_PASS=<strong-password>`
+
+On first run, this will create the admin user and generate the admin PKCS#12 keystore.
 ### OTP behavior
 During login, the OTP is shown in a **client popup** for demo convenience.
 It is also printed to the **server terminal** as a fallback.
